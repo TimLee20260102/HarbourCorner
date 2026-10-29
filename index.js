@@ -3,7 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 
 const app = express();
-app.use(express.static('../')); // 讓伺服器能讀取外層的 index.html
+app.use(express.static(_dirname)); // 讓伺服器能讀取外層的 index.html
 const server = http.createServer(app);
 
 const io = new Server(server, {
