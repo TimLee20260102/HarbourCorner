@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微光 - Glimmer</title>
+    <style>
+        :root {
+            --bg-color: #0d1310;
+            --bg-color-alt: #16110e;
+            --text-color: #D1C7BD;
+            --hint-color: #8C827A;
+            --accent-color: #EEDC82;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            transition: background-color 0.5s ease;
+        }
+
+        .page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: calc(100vh - 70px);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        .page.active {
+            display: flex;
+        }
+
+        /* --- 沙化樹洞 --- */
+        .cave-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .cave-hole {
+            position: absolute;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 0, 0, 0.9) 0%, rgba(13, 19, 16, 0.5) 50%, rgba(13, 19, 16, 0) 70%);
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 1), 0 0 30px rgba(74, 93, 82, 0.2);
+            z-index: -1;
+            animation: caveBreathe 6s infinite ease-in-out, caveRotate 20s infinite linear;
+        }
+
+        @keyframes caveBreathe {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 1;
+                box-shadow: inset 0 0 50px rgba(0, 0, 0, 1), 0 0 45px rgba(74, 93, 82, 0.3);
+            }
+        }
+
+        @keyframes caveRotate {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #inputArea {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(74, 93, 82, 0.6);
+            color: var(--text-color);
+            font-size: 1.2rem;
+            width: 80%;
+            max-width: 400px;
+            padding: 15px;
+            text-align: center;
+            outline: none;
+        }
+
+        #btn {
+            margin-top: 35px;
+            background: #19261f;
+            border: 1px solid #3d4d43;
+            color: var(--text-color);
+            padding: 14px 32px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            z-index: 2;
+        }
+
+        #sandCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        /* --- 病友夜燈 --- */
+        .hint {
+            position: absolute;
+            top: 40px;
+            width: 85%;
+            text-align: center;
+            color: var(--hint-color);
+            font-size: 0.95rem;
+            pointer-events: none;
+            letter-spacing: 1px;
+            line-height: 1.5;
+        }
+
+        .light {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: rgba(255, 221, 103, 0.25);
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--accent-color), 0 0 30px var(--accent-color);
+            cursor: pointer;
+            transition: all 0.5s ease;
+            animation: none;
+            /*breathe 4s infinite ease-in-out;*/
+            /*transform: translate(-50%, -50%);*/
+            /*z-index: 2;*/
+        }
+
+        .light.active {
+            background: #ffdd67;
+            /*明亮金黃色*/
+            box-shadow: 0 0 15px #ffdd67, 0 0 30px #ffdd67, 0 0 45px #ffdd67;
+            animation: pulseGlimmer 2s infinite ease-in-out;
+        }
+
+        @keyframes pulseGlimmer {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.6;
+                box-shadow: 0 0 15px #ffdd67, 0 0 30px #ffdd67;
+            }
+
+            50% {
+                transform: scale(1.4);
+                opacity: 1;
+                box-shadow: 0 0 25px #ffdd67;
+            }
+        }
+
+        .ripple {
+            position: absolute;
+            border: 1px solid rgba(238, 220, 130, 0.6);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: rippleEffect 1.5s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+            z-index: 2;
+        }
+
+        @keyframes rippleEffect {
+            0% {
+                width: 0;
+                height: 0;
+                opacity: 1;
+            }
+
+            100% {
+                width: 180px;
+                height: 180px;
+                opacity: 0;
+            }
+        }
+
+        /* --- 底部導航欄 --- */
+        .nav-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background-color: rgba(10, 15, 12, 0.85);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+            z-index: 10;
+        }
+
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            color: var(--hint-color);
+            font-size: 0.9rem;
+            cursor: pointer;
+            padding: 10px 0;
+            transition: color 0.3s ease;
+        }
+
+        .nav-item.active {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 頁面一：沙化樹洞 -->
+    <div id="pageCave" class="page active">
+        <div class="cave-container">
+            <div class="cave-hole"></div>
+            <input type="text" id="inputArea" placeholder="把今天的辛苦與痛楚寫在這裡..." autocomplete="off">
+        </div>
+        <button id="btn" onclick="disintegrate()">你已進入釋放樹洞, 寫低心底感受, 一按這裹就釋放了, 電腦不會儲存, 一切隨風沙消逝。</button>
+        <canvas id="sandCanvas"></canvas>
+    </div>
+
+    <!-- 頁面二：病友夜燈 -->
+    <div id="pageStars" class="page">
+        <div class="hint">深夜的星空下，有人正與你默默作伴。<br>點擊微光，為彼此送上一聲無聲的問候。</div>
+    </div>
+
+    <!-- 底部導航欄 -->
+    <div class="nav-bar">
+        <div id="navCave" class="nav-item active" onclick="switchPage('cave')">🪐 釋放樹洞</div>
+        <div id="navStars" class="nav-item" onclick="switchPage('stars')">🌌 病友夜燈</div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        // --- 頁面切換邏輯 ---
+
+        function switchPage(target) {
+            const cavePage = document.getElementById('pageCave');
+            const starsPage = document.getElementById('pageStars');
+            const navCave = document.getElementById('navCave');
+            const navStars = document.getElementById('navStars');
+
+            cavePage.classList.remove('active');
+            starsPage.classList.remove('active');
+            navCave.classList.remove('active');
+            navStars.classList.remove('active');
+
+            // 移除舊的夜燈
+            document.querySelectorAll('.light').forEach(el => el.remove());
+
+            if (target === 'cave') {
+                cavePage.classList.add('active');
+                navCave.classList.add('active');
+                document.body.style.backgroundColor = 'var(--bg-color)';
+            } else if (target === 'stars') {
+                starsPage.classList.add('active');
+                navStars.classList.add('active');
+                document.body.style.backgroundColor = 'var(--bg-color-alt)';
+                initLights(); // 單機模擬生成夜燈
+
+                if (typeof socket !== 'undefined' && socket.connected) {
+                    socket.emit('toggle-light', 'REFRESH_MAP');
+                }
+            }
+        }
+
+        // --- 模擬單機夜燈生成 ---
+        // --- 升級版：生成固定病房地圖夜燈 ---
+        // ⚠️ 備註：現在 initLights 不需要自己隨機跑 for 迴圈了，改由監聽後端數據來生成！
+        function initLights() {
+            // 這裡先保持清空，等待接收後端通知後，會由下方的 socket.on 負責渲染畫布
+            const container = document.getElementById('pageStars');
+            // 清空舊的燈，防止重疊
+            document.querySelectorAll('.light').forEach(el => el.remove());
+        }
+
+        // 💡 抽取出來的建立夜燈函數
+        function createStaticLight(lightData) {
+            const container = document.getElementById('pageStars');
+            if (!container) return;
+
+            // 檢查是否已經存在這盞燈，存在就先移除
+            const oldLight = document.getElementById(`light-${lightData.id}`);
+            if (oldLight) oldLight.remove();
+
+            const light = document.createElement('div');
+            light.id = `light-${lightData.id}`;
+            light.className = 'light';
+
+            // 使用後端統一規定的百分比座標
+            light.style.left = `${lightData.x}%`;
+            light.style.top = `${lightData.y}%`;
+
+            // 💡 根據後端的 isOn 狀態，決定這盞燈要不要「溫暖常亮（呼吸）」
+            if (lightData.isOn) {
+                light.classList.add('active'); // 我們等一下會在 CSS 加上這個常亮 class
+                light.style.boxShadow = '0 0 20px #ffdd67, 0 0 40px #ffdd67';
+                light.style.background = '#ffdd67';
+            } else {
+                // 如果是熄滅狀態，就給它一個淡淡的微光輪廓（代表床位在那裡）
+                light.style.boxShadow = 'none';
+                light.style.background = 'rgba(255, 221, 103, 0.2)';
+            }
+
+            // 點擊事件：通知後端我們要切換這盞燈的狀態
+            light.addEventListener('click', (e) => {
+                
+                    // 本地立刻放個漂亮的漣漪
+                    sendRipple(e.clientX, e.clientY);
+
+                    // 💡 通知後端：有人動了這盞燈的開關！
+                    socket.emit('toggle-light', lightData.id);
+
+                 
+                    
+                }
+            );
+
+            container.appendChild(light);
+        }
+
+
+        function sendRipple(x, y) {
+            const ripple = document.createElement('div');
+            ripple.className = 'ripple';
+            ripple.style.left = `${x}px`;
+            ripple.style.top = `${y}px`;
+            document.body.appendChild(ripple);
+
+            if ('vibrate' in navigator) navigator.vibrate(40);
+            ripple.addEventListener('animationend', () => ripple.remove());
+        }
+
+        // --- 樹洞沙化邏輯 ---
+        const canvas = document.getElementById('sandCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function disintegrate() {
+            const input = document.getElementById('inputArea');
+            const text = input.value;
+            if (!text) return;
+
+            const rect = input.getBoundingClientRect();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = '24px sans-serif';
+            ctx.fillStyle = '#D1C7BD';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            ctx.fillText(text, rect.left + rect.width / 2, rect.top + rect.height / 2);
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            input.value = '';
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            for (let i = 0; i < imgData.height; i += 4) {
+                for (let j = 0; j < imgData.width; j += 4) {
+                    const index = (i * imgData.width + j) * 4;
+                    if (imgData.data[index + 3] > 128) {
+                        const angle = Math.atan2(centerY - i, centerX - j);
+                        const speed = Math.random() * 2 + 1;
+                        particles.push({
+                            x: j, y: i,
+
+                            vx: Math.cos(angle) * speed + (Math.random() - 0.5) * 2,
+                            vy: Math.sin(angle) * speed + (Math.random() - 0.5) * 2,
+                            alpha: 1, size: Math.random() * 2.5 + 1
+                        });
+                    }
+                }
+            }
+            if (particles.length > 0) requestAnimationFrame(updateParticles);
+        }
+        function updateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                const distToCenter = Math.hypot(centerX - p.x, centerY - p.y);
+                p.alpha -= (distToCenter < 50) ? 0.05 : 0.012;
+                if (p.alpha <= 0) { particles.splice(i, 1); continue; }
+                ctx.fillStyle = `rgba(209, 199, 189, ${p.alpha})`;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            }
+            if (particles.length > 0) requestAnimationFrame(updateParticles);
+        }
+
+
+
+        const socket = io(window.location.origin); //自動抓取網路上的新網址連線
+
+        socket.on('connect', () => {
+            console.log('成功連接到微光港灣後端伺服器！');
+        });
+
+        // 💡 1. 剛進網頁時，收到後端傳來的 6 盞燈初始狀態，立刻畫出來
+        socket.on('init-ward-status', (wardLights) => {
+            // 只有在當前是夜燈頁面時才畫燈
+            const starsPage = document.getElementById('pageStars');
+            if (starsPage && starsPage.classList.contains('active')) {
+                Object.values(wardLights).forEach(lightData => {
+                    createStaticLight(lightData);
+                });
+            }
+        });
+
+        // 💡 2. 收到後端通知「某一盞燈被切換了開關」
+        socket.on('sync-ward-light', (updatedLight) => {
+            // 重新渲染那一盞燈的亮滅狀態
+            createStaticLight(updatedLight);
+        });
+        socket.on('receive-companion-ripple', (data) => {
+            const targetLight = document.getElementById(`light-${data.lightId}`);
+            if (targetLight) {
+                const rect = targetLight.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                sendRipple(centerX, centerY);
+            }
+        });
+
+
+
+
+    </script>
+</body>
+
+</html>
