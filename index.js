@@ -1,9 +1,12 @@
+const path = require('path');
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 
 const app = express();
-app.use(express.static(_dirname)); // 讓伺服器能讀取外層的 index.html
+app.get('/',(req, res)=>{
+    res.sendFile(path.join(_dirname, 'index.html'));
+});
 const server = http.createServer(app);
 
 const io = new Server(server, {
