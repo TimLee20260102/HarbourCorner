@@ -1,13 +1,9 @@
-const path = require('path');
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 
 const app = express();
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
+app.use(express.static(_dirname)); // 讓伺服器能讀取外層的 index.html
 const server = http.createServer(app);
 
 const io = new Server(server, {
@@ -77,3 +73,122 @@ const PORT = 3000;
 server.listen(PORT, () => {
     console.log(`微光港灣病房地圖服務已在 Port ${PORT} 溫暖啟動...`);
 });
+
+
+// 儲存目前在線的孤燈數據
+// 結構: { socketId: { id: string, x: number, y: number } }
+let activeLights = {};
+
+io.on('connection', (socket) => {
+    console.log(`病友加入: ${socket.id}`);
+
+    // 1. 當新連線進來，為其生成一盞孤燈的隨機位置（百分比坐標，方便前端自適應）
+    activeLights[socket.id] = {
+        id: socket.id,
+        x: Math.floor(Math.random() * 60) + 20, // 限制在 20% ~ 80% 區域，避免貼邊
+        y: Math.floor(Math.random() * 40) + 30  // 限制在 30% ~ 70% 區域，避開底欄與頂欄
+    };
+
+    // 廣播給所有人更新後的孤燈名單
+    io.emit('update_lights', Object.values(activeLights));
+
+    // 2. 監聽點擊某盞孤燈的事件
+    socket.on('click_light', (data) => {
+        const targetId = data.targetId;
+        
+        // 確認被點擊的燈是否還在線
+        if (activeLights[targetId]) {
+            // 觸發雙邊陪伴大漣漪：通知全體（或只通知這兩個人，這裡建議廣播讓大家都能看到溫暖的互動）
+            io.emit('light_triggered', {
+                fromId: socket.id,
+                targetId: targetId
+            });
+        }
+    });
+
+    // 3. 監聽斷開連線
+    socket.on('disconnect', () => {
+        console.log(`病友離開: ${socket.id}`);
+        // 移除該盞孤燈
+        delete activeLights[socket.id];
+        // 再次廣播更新名單
+        io.emit('update_lights', Object.values(activeLights));
+    });
+});
+
+const socket = io('https://onrender.com'); // 如果是同網域可直接 io()
+const container = document.getElementById('lonely-lights-container');
+
+// 儲存目前前端渲染的燈 DOM 對照表，方便精準控制動畫
+let lightElements = {}; 
+
+// 1. 監聽後端廣播的在線燈火數據
+socket.on('update_lights', (lightsArray) => {
+    container.innerHTML = ''; // 清空重新渲染
+    lightElements = {};
+
+    lightsArray.forEach(light => {
+        const dot = document.createElement('div');
+        dot.className = 'light-dot';
+        // 使用百分比布局，確保在不同螢幕大小下分布相對一致
+        dot.style.left = `${light.x}%`;
+        dot.style.top = `${light.y}%`;
+        
+        // 如果這盞燈是自己，可以加上特別的標記或顏色（選實作）
+        if (light.id === socket.id) {
+            dot.style.backgroundColor = '#a8ffb2'; 
+            dot.style.boxShadow = '0 0 8px #a8ffb2';
+        }
+
+        // 點擊事件：點擊對方的燈
+        dot.addEventListener('click', () => {
+            if (light.id !== socket.id) {
+                socket.emit('click_light', { targetId: light.id });
+            }
+        });
+
+        container.appendChild(dot);
+        // 快取 DOM 節點
+        lightElements[light.id] = dot;
+    });
+});
+
+// 2. 監聽雙邊觸發點亮事件
+socket.on('light_triggered', (data) => {
+    const { fromId, targetId } = data;
+
+    // 讓發起方與接收方的燈同時變亮並產生漣漪
+    [fromId, targetId].forEach(id => {
+        const el = lightElements[id];
+        if (el) {
+            // 觸發高亮變亮
+            el.classList.add('ignited');
+            
+            // 產生隨身漣漪
+            createLocalRipple(el.style.left, el.style.top);
+
+            // 1.5 秒後恢復微光呼吸狀態
+            setTimeout(() => {
+                el.classList.remove('ignited');
+            }, 1500);
+        }
+    });
+
+    // 💡 這裡可以同時調用你原本寫好的「雙邊觸發陪伴大漣漪」全螢幕特效函數！
+    // 例如：triggerBigRipple(fromId, targetId);
+});
+
+// 生成孤燈專屬小漣漪的輔助函數
+function createLocalRipple(left, top) {
+    const ripple = document.createElement('div');
+    ripple.className = 'light-ripple';
+    ripple.style.left = left;
+    ripple.style.top = top;
+    container.appendChild(ripple);
+    
+    // 動態結束後移除自己，避免記憶體洩漏
+    ripple.addEventListener('animationend', () => {
+        ripple.remove();
+    });
+}
+
