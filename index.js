@@ -4,7 +4,10 @@ const path = require('path');
 const { Server } = require('socket.io');
 
 const app = express();
-app.use(express.static(path.join(__dirname, '..')));
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+app.use(express.static(__dirname));
 
 const server = http.createServer(app);
 const io = new Server(server, {
