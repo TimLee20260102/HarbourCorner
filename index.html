@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-HK">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <style>
         :root {
             --bg-color: #0d1310;
+            --bg-color-alt: #110e16;
             --text-color: #D1C7BD;
             --hint-color: #8C827A;
             --accent-color: #EEDC82;
@@ -20,6 +22,7 @@
             padding: 0;
             overflow: hidden;
             height: 100vh;
+            transition: background-color 0.5s ease;
         }
 
         .page {
@@ -59,12 +62,32 @@
             background: radial-gradient(circle, rgba(0, 0, 0, 0.9) 0%, rgba(13, 19, 16, 0.5) 50%, rgba(13, 19, 16, 0) 70%);
             box-shadow: inset 0 0 40px rgba(0, 0, 0, 1), 0 0 30px rgba(74, 93, 82, 0.2);
             z-index: -1;
-            animation: caveBreathe 6s infinite ease-in-out;
+            animation: caveBreathe 6s infinite ease-in-out, caveRotate 20s infinite linear;
         }
 
         @keyframes caveBreathe {
-            0%, 100% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.05); opacity: 1; }
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 1;
+                box-shadow: inset 0 0 50px rgba(0, 0, 0, 1), 0 0 45px rgba(74, 93, 82, 0.3);
+            }
+        }
+
+        @keyframes caveRotate {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         #inputArea {
@@ -89,9 +112,11 @@
             border-radius: 25px;
             cursor: pointer;
             font-size: 1rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
             z-index: 2;
         }
 
+        /* --- 通用：提示與漣漪 --- */
         .hint {
             position: absolute;
             top: 40px;
@@ -104,7 +129,8 @@
             line-height: 1.5;
         }
 
-        .ripple {
+        .ripple,
+        .light-ripple {
             position: absolute;
             border: 1px solid rgba(238, 220, 130, 0.6);
             border-radius: 50%;
@@ -115,8 +141,17 @@
         }
 
         @keyframes rippleEffect {
-            0% { width: 0; height: 0; opacity: 1; }
-            100% { width: 180px; height: 180px; opacity: 0; }
+            0% {
+                width: 0;
+                height: 0;
+                opacity: 1;
+            }
+
+            100% {
+                width: 180px;
+                height: 180px;
+                opacity: 0;
+            }
         }
 
         /* --- 2. 病友夜燈 --- */
@@ -139,11 +174,20 @@
         }
 
         @keyframes pulseGlimmer {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
-            50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.7;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.3);
+                opacity: 1;
+            }
         }
 
-        /* --- 3. 孤燈星空大畫面 --- */
+        /* --- 3. 孤燈獨立星空大畫面 --- */
         .lonely-container {
             position: relative;
             width: 100%;
@@ -164,8 +208,19 @@
         }
 
         @keyframes breathe {
-            0%, 100% { opacity: 0.4; box-shadow: 0 0 5px #ffdf85; transform: translate(-50%, -50%) scale(1); }
-            50% { opacity: 1; box-shadow: 0 0 18px #ffc107; transform: translate(-50%, -50%) scale(1.2); }
+
+            0%,
+            100% {
+                opacity: 0.4;
+                box-shadow: 0 0 5px #ffdf85;
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                opacity: 1;
+                box-shadow: 0 0 18px #ffc107;
+                transform: translate(-50%, -50%) scale(1.2);
+            }
         }
 
         .light-dot.ignited {
@@ -220,7 +275,7 @@
         <button id="btn">釋放樹洞</button>
     </div>
 
-    <!-- 🌌 頁面 2：孤燈 -->
+    <!-- 🌌 頁面 2：孤燈 (新功能大畫面) -->
     <div id="lonely-page" class="page">
         <div class="hint">你進入了孤燈星空。畫面的燈火數量代表目前在線的病友總數。<br>點擊對方的微光，在孤獨中送上一點明亮。</div>
         <div id="lonely-lights-container" class="lonely-container"></div>
@@ -229,31 +284,39 @@
     <!-- 🌌 頁面 3：病友夜燈 -->
     <div id="light-page" class="page">
         <div class="hint">深夜的星空下，有人正與你默默作伴。<br>點擊微光，為彼此送上一聲無聲的問候。</div>
+        <!-- 6 盞固定夜燈容器 -->
         <div id="ward-lights-container" style="position:relative; width:100%; height:100%;"></div>
     </div>
 
     <!-- 🧭 底部導航欄 -->
     <div class="nav-bar">
-        <div id="nav-cave" class="nav-item active" onclick="switchPage('cave-page', 'nav-cave')">🪐 釋放樹洞</div>
-        <div id="nav-lonely" class="nav-item" onclick="switchPage('lonely-page', 'nav-lonely')">🕯️ 孤燈房</div>
-        <div id="nav-light" class="nav-item" onclick="switchPage('light-page', 'nav-light')">🌌 病友夜燈</div>
+        <div class="nav-item active" onclick="switchPage('cave-page')">🪐 釋放樹洞</div>
+        <div class="nav-item" onclick="switchPage('lonely-page')">🕯️ 孤燈房</div>
+        <div class="nav-item" onclick="switchPage('light-page')">🌌 病友夜燈</div>
     </div>
 
+    <!-- 📡 引入 Socket.io 與核心腳本 -->
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // 自動識別 Render 或本地網址連線
         const socket = io(window.location.origin);
-        let lightElements = {}; 
 
-        // 🔄 修正後的導航切換：精準對齊個別按鈕，絕不卡死
-        function switchPage(pageId, navId) {
+        let lightElements = {}; // 暫存孤燈 DOM 節點
+
+        // 🔄 1. 頁面切換控制
+        function switchPage(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            
+
             document.getElementById(pageId).classList.add('active');
-            document.getElementById(navId).classList.add('active');
+
+            // 讓對應的導航按鈕高亮
+            if (pageId === 'cave-page') document.querySelectorAll('.nav-item')[0].classList.add('active');
+            if (pageId === 'lonely-page') document.querySelectorAll('.nav-item')[1].classList.add('active');
+            if (pageId === 'light-page') document.querySelectorAll('.nav-item')[2].classList.add('active');
         }
 
-        // 🎨 漣漪動畫
+        // 🎨 2. 特效輔助函數：本地點擊漣漪
         function sendRipple(x, y) {
             const ripple = document.createElement('div');
             ripple.className = 'ripple';
@@ -263,20 +326,20 @@
             ripple.addEventListener('animationend', () => ripple.remove());
         }
 
-        // 🪵 釋放樹洞按鈕點擊效果
         document.getElementById('btn').addEventListener('click', () => {
             const input = document.getElementById('inputArea');
-            if(input.value.trim() !== "") {
-                alert("文字已隨風沙釋放，一切隨風消逝...");
-                input.value = ""; // 清空輸入框
-            }
+            if (!input.value.trim()) return;
+            const cave = document.querySelector('.cave-container').getBoundingClientRect();
+            sendRipple(cave.left + cave.width / 2, cave.top + cave.height / 2);
+            input.value = '';
         });
 
         // ===================================================
-        // 🌌 功能一：【病友夜燈】
+        // 🌌 功能一：【固定病房夜燈】前端邏輯
         // ===================================================
         const wardContainer = document.getElementById('ward-lights-container');
 
+        // 初始化渲染 6 盞燈
         socket.on('init-ward-status', (wardLights) => {
             wardContainer.innerHTML = '';
             Object.values(wardLights).forEach(lightData => {
@@ -296,58 +359,59 @@
 
         socket.on('sync-ward-light', (lightData) => {
             const el = document.getElementById(`light-${lightData.id}`);
-            if (el) {
-                if (lightData.isOn) el.classList.add('active');
-                else el.classList.remove('active');
-            }
+            if (el) el.classList.toggle('active', lightData.isOn);
         });
 
         socket.on('receive-companion-ripple', (data) => {
-请谨慎使用此类代码。
-const targetLight = document.getElementById(light-${data.lightId});
-if (targetLight) {
-const rect = targetLight.getBoundingClientRect();
-sendRipple(rect.left + rect.width / 2, rect.top + rect.height / 2);
-}
-});
-// ===================================================
-// 🕯️ 功能二：【動態孤燈】
-// ===================================================
-const lonelyContainer = document.getElementById('lonely-lights-container');
-socket.on('update_lights', (lightsArray) => {
-lonelyContainer.innerHTML = '';
-lightElements = {};
-lightsArray.forEach(light => {
-const dot = document.createElement('div');
-dot.className = 'light-dot';
-dot.style.left = ${light.x}%;
-dot.style.top = ${light.y}%;
-if (light.id === socket.id) {
-dot.style.backgroundColor = '#a8ffb2';
-dot.style.boxShadow = '0 0 15px #a8ffb2';
-}
-dot.addEventListener('click', (e) => {
-sendRipple(e.clientX, e.clientY);
-if (light.id !== socket.id) {
-socket.emit('click_light', { targetId: light.id });
-}
-});
-lonelyContainer.appendChild(dot);
-lightElements[light.id] = dot;
-});
-});
-socket.on('light_triggered', (data) => {
-const { fromId, targetId } = data;
-[fromId, targetId].forEach(id => {
-const el = lightElements[id];
-if (el) {
-el.classList.add('ignited');
-const rect = el.getBoundingClientRect();
-sendRipple(rect.left + rect.width / 2, rect.top + rect.height / 2);
-setTimeout(() => { el.classList.remove('ignited'); }, 1500);
-}
-});
-});
+            const targetLight = document.getElementById(`light-${data.lightId}`);
+            if (targetLight) {
+                const rect = targetLight.getBoundingClientRect();
+                sendRipple(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            }
+        });
 
+        const lonelyContainer = document.getElementById('lonely-lights-container');
+        socket.on('update_lights', (lightsArray) => {
+            lonelyContainer.innerHTML = '';
+            lightElements = {};
+            lightsArray.forEach(light => {
+                const dot = document.createElement('div');
+                dot.className = 'light-dot';
+                dot.style.left = `${light.x}%`;
+                dot.style.top = `${light.y}%`;
 
+                if (light.id === socket.id) {
+                    dot.style.backgroundColor = '#a8ffb2';
+                    dot.style.boxShadow = '0 0 15px #a8ffb2';
+                }
 
+                dot.addEventListener('click', (e) => {
+                    sendRipple(e.clientX, e.clientY);
+                    if (light.id !== socket.id) {
+                        socket.emit('click_light', { targetId: light.id });
+                    }
+                });
+                lonelyContainer.appendChild(dot);
+                lightElements[light.id] = dot;
+            });
+        });
+
+        socket.on('light_triggered', (data) => {
+            const { fromId, targetId } = data;
+            [fromId, targetId].forEach(id => {
+                const el = lightElements[id];
+                if (el) {
+                    el.classList.add('ignited');
+                    const rect = el.getBoundingClientRect();
+                    sendRipple(rect.left + rect.width / 2, rect.top + rect.height / 2);
+                    setTimeout(() => el.classList.remove('ignited'), 1500);
+                }
+            });
+        });
+
+            
+            
+    </script>
+</body>
+
+</html>
