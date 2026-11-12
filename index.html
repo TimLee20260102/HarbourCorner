@@ -140,6 +140,12 @@
             z-index: 2;
         }
 
+        .sand-canvas {
+            position: fixed;
+            z-index: 3;
+            pointer-events: none;
+        }
+
         @keyframes rippleEffect {
             0% {
                 width: 0;
@@ -326,11 +332,97 @@
             ripple.addEventListener('animationend', () => ripple.remove());
         }
 
+        function releaseAsSand(input) {
+            const text = input.value;
+            const rect = input.getBoundingClientRect();
+            const style = getComputedStyle(input);
+            const dpr = window.devicePixelRatio || 1;
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            if (!context) return;
+
+            canvas.className = 'sand-canvas';
+            canvas.style.left = `${rect.left}px`;
+            canvas.style.top = `${rect.top}px`;
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+            canvas.width = Math.ceil(rect.width * dpr);
+            canvas.height = Math.ceil(rect.height * dpr);
+            context.scale(dpr, dpr);
+            context.font = style.font;
+            context.fillStyle = style.color;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(text, rect.width / 2, rect.height / 2);
+
+            const image = context.getImageData(0, 0, canvas.width, canvas.height);
+            const stride = 4;
+            const particles = [];
+
+            for (let y = 0; y < canvas.height; y += stride) {
+                for (let x = 0; x < canvas.width; x += stride) {
+                    if (image.data[(y * canvas.width + x) * 4 + 3] > 100) {
+                        particles.push({
+                            x: x / dpr,
+                            y: y / dpr,
+                            vx: (Math.random() - 0.5) * 0.8,
+                            vy: Math.random() * 0.35 + 0.1,
+                            drift: (Math.random() - 0.5) * 0.3,
+                            delay: Math.random() * 350,
+                            size: Math.random() * 1.5 + 0.6
+                        });
+                    }
+                }
+            }
+
+            if (!particles.length) return;
+
+            document.body.appendChild(canvas);
+            const startedAt = performance.now();
+            const duration = 2200;
+
+            function animate(now) {
+                const elapsed = now - startedAt;
+                context.clearRect(0, 0, rect.width, rect.height);
+
+                particles.forEach(particle => {
+                    const age = elapsed - particle.delay;
+                    if (age < 0) {
+                        context.globalAlpha = 1;
+                        context.fillStyle = style.color;
+                        context.fillRect(particle.x, particle.y, particle.size, particle.size);
+                        return;
+                    }
+
+                    const progress = Math.min(age / (duration - particle.delay), 1);
+                    context.globalAlpha = 1 - progress;
+                    context.fillStyle = '#d8c49a';
+                    context.fillRect(
+                        particle.x + particle.vx * age / 16.67 + particle.drift * age / 35,
+                        particle.y + particle.vy * age / 16.67 + 0.025 * age / 16.67,
+                        particle.size,
+                        particle.size
+                    );
+                });
+
+                context.globalAlpha = 1;
+                if (elapsed < duration) {
+                    requestAnimationFrame(animate);
+                } else {
+                    canvas.remove();
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
         document.getElementById('btn').addEventListener('click', () => {
             const input = document.getElementById('inputArea');
             if (!input.value.trim()) return;
             const cave = document.querySelector('.cave-container').getBoundingClientRect();
             sendRipple(cave.left + cave.width / 2, cave.top + cave.height / 2);
+            releaseAsSand(input);
             input.value = '';
         });
 
