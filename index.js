@@ -35,6 +35,7 @@ const activeLights = {};
 const residualTimers = new Map();
 const RESIDUAL_GLOW_MS = 4 * 60 * 60 * 1000;
 const SOLO_WAIT_MS = 10 * 1000;
+const MIN_LIGHT_DISTANCE = 18;
 let lightJarCount = 0;
 let soloTimer = null;
 let soloSince = 0;
@@ -49,6 +50,41 @@ function activeUserIds() {
     return Object.values(activeLights)
         .filter((light) => light.status === 'active')
         .map((light) => light.id);
+}
+
+function getLightPosition() {
+    const existingLights = Object.values(activeLights);
+    const distanceToNearestLight = (position) => {
+        if (existingLights.length === 0) return Infinity;
+
+        return existingLights.reduce((minimum, light) => Math.min(
+            minimum,
+            Math.hypot(position.x - light.x, position.y - light.y)
+        ), Infinity);
+    };
+
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+        const position = {
+            x: Math.random() * 84 + 8,
+            y: Math.random() * 72 + 8
+        };
+        if (distanceToNearestLight(position) >= MIN_LIGHT_DISTANCE) return position;
+    }
+
+    let bestPosition = null;
+    let bestDistance = -1;
+    for (let y = 8; y <= 80; y += 2) {
+        for (let x = 8; x <= 92; x += 2) {
+            const position = { x, y };
+            const distance = distanceToNearestLight(position);
+            if (distance > bestDistance) {
+                bestPosition = position;
+                bestDistance = distance;
+            }
+        }
+    }
+
+    return bestPosition;
 }
 
 function deliverStoredGlow() {
@@ -96,8 +132,7 @@ io.on('connection', (socket) => {
     socket.emit('init-ward-status', wardLights);
     activeLights[socket.id] = {
         id: socket.id,
-        x: Math.floor(Math.random() * 60) + 20,
-        y: Math.floor(Math.random() * 40) + 30,
+        ...getLightPosition(),
         status: 'active',
         brightness: 1
     };

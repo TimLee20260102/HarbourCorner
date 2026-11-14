@@ -197,7 +197,92 @@
         .lonely-container {
             position: relative;
             width: 100%;
-            height: 100%;
+            flex: 1;
+            min-height: 0;
+        }
+
+        #lonely-page {
+            justify-content: flex-start;
+        }
+
+        .lonely-header {
+            z-index: 4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+            box-sizing: border-box;
+            padding: clamp(20px, 5vh, 40px) 20px 12px;
+        }
+
+        .lonely-header .hint {
+            position: static;
+            width: 100%;
+            max-width: 600px;
+            box-sizing: border-box;
+            color: var(--hint-color);
+        }
+
+        .glimmer-guide {
+            width: 100%;
+            max-width: 600px;
+            box-sizing: border-box;
+            padding: 14px 18px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #d7d0c8;
+            font-size: 0.88rem;
+            line-height: 1.55;
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.35s ease, transform 0.35s ease, max-height 0.35s ease,
+                padding 0.35s ease, border-color 0.35s ease, margin 0.35s ease;
+            max-height: 300px;
+            overflow: hidden;
+        }
+
+        .glimmer-guide.is-hidden {
+            max-height: 0;
+            margin-bottom: -16px;
+            padding-top: 0;
+            padding-bottom: 0;
+            border-color: transparent;
+            opacity: 0;
+            transform: translateY(-6px);
+            pointer-events: none;
+        }
+
+        .glimmer-guide p {
+            margin: 0;
+        }
+
+        .glimmer-guide p + p {
+            margin-top: 5px;
+        }
+
+        .glimmer-guide strong {
+            color: #ead9ad;
+            font-weight: 600;
+        }
+
+        .glimmer-guide-dismiss {
+            display: block;
+            margin: 10px 0 0 auto;
+            padding: 4px 0 2px 8px;
+            border: 0;
+            background: transparent;
+            color: #a99f92;
+            font: inherit;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: color 0.25s ease;
+        }
+
+        .glimmer-guide-dismiss:hover,
+        .glimmer-guide-dismiss:focus-visible {
+            color: #e6d9aa;
         }
 
         .light-dot {
@@ -260,7 +345,11 @@
             top: 16px;
             left: 50%;
             width: max-content;
-            max-width: 180px;
+            max-width: min(180px, calc(100vw - 32px));
+            box-sizing: border-box;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.6);
             color: #e8b58c;
             font-size: 10px;
             line-height: 1.4;
@@ -271,8 +360,6 @@
         }
 
         .light-jar {
-            position: absolute;
-            top: 92px;
             z-index: 4;
             display: flex;
             align-items: center;
@@ -381,11 +468,19 @@
 
     <!-- 🌌 頁面 2：孤燈 (新功能大畫面) -->
     <div id="lonely-page" class="page">
-        <div class="hint">你進入了孤燈星空。畫面的燈火數量代表目前在線的病友總數。<br>點擊對方的微光，在孤獨中送上一點明亮。</div>
-        <button id="light-jar" class="light-jar" type="button" aria-label="存入一縷微光">
-            <span>✨ 星光儲蓄罐</span>
-            <span id="light-jar-count" class="light-jar-count" aria-live="polite">0</span>
-        </button>
+        <div class="lonely-header">
+            <section id="glimmer-guide" class="glimmer-guide" aria-label="孤燈房使用說明">
+                <p><strong>明亮微光：</strong>此刻正在線上的同路人，點擊可送上無聲鼓勵。</p>
+                <p><strong>暖橘餘溫：</strong>剛離開不久的足跡（保留 4 小時），點擊可為他添光。</p>
+                <p><strong>星光儲蓄罐：</strong>平時點擊存入祝福，深夜有人獨自上線時會自動飛向他作伴。</p>
+                <button id="glimmer-guide-dismiss" class="glimmer-guide-dismiss" type="button">我已經熟悉了，不用提醒</button>
+            </section>
+            <div class="hint">你進入了孤燈星空。畫面的燈火數量代表目前在線的病友總數。<br>點擊對方的微光，在孤獨中送上一點明亮。</div>
+            <button id="light-jar" class="light-jar" type="button" aria-label="存入一縷微光">
+                <span>✨ 星光儲蓄罐</span>
+                <span id="light-jar-count" class="light-jar-count" aria-live="polite">0</span>
+            </button>
+        </div>
         <div id="lonely-lights-container" class="lonely-container"></div>
     </div>
 
@@ -407,6 +502,16 @@
     <!-- 📡 引入 Socket.io 與核心腳本 -->
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        const glimmerGuide = document.getElementById('glimmer-guide');
+        if (localStorage.getItem('hideGlimmerGuide') === 'true') {
+            glimmerGuide.classList.add('is-hidden');
+        }
+
+        document.getElementById('glimmer-guide-dismiss').addEventListener('click', () => {
+            localStorage.setItem('hideGlimmerGuide', 'true');
+            glimmerGuide.classList.add('is-hidden');
+        });
+
         // 自動識別 Render 或本地網址連線
         const socket = io(window.location.origin);
 
