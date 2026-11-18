@@ -123,7 +123,7 @@ function refreshSoloPresence() {
 }
 
 io.on('connection', (socket) => {
-    console.log('一位新的病友連線，ID:', socket.id);
+    console.log('一位新的同行者連線，ID:', socket.id);
 
     const oldResidualTimer = residualTimers.get(socket.id);
     if (oldResidualTimer) clearTimeout(oldResidualTimer);
@@ -186,7 +186,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log('病友斷開連線:', socket.id);
+        console.log('同行者斷開連線:', socket.id);
 
         Object.values(wardLights).forEach((light) => {
             if (light.ownerId === socket.id) {

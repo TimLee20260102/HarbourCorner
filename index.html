@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html lang="zh-Hant">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>微光 - Glimmer</title>
+    <title>微光｜港灣角落</title>
     <style>
         :root {
             --bg-color: #0d1310;
@@ -129,6 +129,10 @@
             line-height: 1.5;
         }
 
+        .page > .hint {
+            top: 88px;
+        }
+
         .ripple,
         .light-ripple {
             position: absolute;
@@ -160,7 +164,7 @@
             }
         }
 
-        /* --- 2. 病友夜燈 --- */
+        /* --- 2. 同行夜燈 --- */
         .light {
             position: absolute;
             width: 14px;
@@ -451,57 +455,235 @@
             color: var(--accent-color);
             font-weight: bold;
         }
+
+        .language-switcher {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 30;
+            display: flex;
+            gap: 2px;
+            padding: 3px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            background: rgba(15, 20, 17, 0.58);
+            backdrop-filter: blur(10px);
+        }
+
+        .language-switcher button {
+            min-width: 34px;
+            padding: 6px 8px;
+            border: 0;
+            border-radius: 16px;
+            background: transparent;
+            color: var(--hint-color);
+            font: inherit;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: background 0.25s ease, color 0.25s ease;
+        }
+
+        .language-switcher button[aria-pressed="true"] {
+            background: rgba(238, 220, 130, 0.16);
+            color: var(--accent-color);
+        }
+
+        .language-switcher button:focus-visible {
+            outline: 1px solid var(--accent-color);
+            outline-offset: 2px;
+        }
     </style>
 </head>
 
 <body>
 
+    <div class="language-switcher" role="group" aria-label="選擇語言" data-i18n-aria-label="languageSelector">
+        <button type="button" data-language="zh-Hant" aria-label="繁體中文" data-i18n-aria-label="traditionalChinese" aria-pressed="true">繁</button>
+        <button type="button" data-language="zh-Hans" aria-label="简体中文" data-i18n-aria-label="simplifiedChinese" aria-pressed="false">简</button>
+        <button type="button" data-language="en" aria-label="English" data-i18n-aria-label="english" aria-pressed="false">EN</button>
+    </div>
+
     <!-- 🌌 頁面 1：釋放樹洞 -->
     <div id="cave-page" class="page active">
-        <div class="hint">你已進入釋放樹洞，寫低心底感受，一按這裏就釋放了，電腦不會儲存，一切隨風沙消逝。</div>
+        <div class="hint" data-i18n="caveHint"></div>
         <div class="cave-container">
             <div class="cave-hole"></div>
-            <input type="text" id="inputArea" placeholder="輸入你想說的話...">
+            <input type="text" id="inputArea" data-i18n-placeholder="cavePlaceholder" placeholder="輸入你想說的話...">
         </div>
-        <button id="btn">釋放樹洞</button>
+        <button id="btn" data-i18n="releaseButton"></button>
     </div>
 
     <!-- 🌌 頁面 2：孤燈 (新功能大畫面) -->
     <div id="lonely-page" class="page">
         <div class="lonely-header">
-            <section id="glimmer-guide" class="glimmer-guide" aria-label="孤燈房使用說明">
-                <p><strong>明亮微光：</strong>此刻正在線上的同路人，點擊可送上無聲鼓勵。</p>
-                <p><strong>暖橘餘溫：</strong>剛離開不久的足跡（保留 4 小時），點擊可為他添光。</p>
-                <p><strong>星光儲蓄罐：</strong>平時點擊存入祝福，深夜有人獨自上線時會自動飛向他作伴。</p>
-                <button id="glimmer-guide-dismiss" class="glimmer-guide-dismiss" type="button">我已經熟悉了，不用提醒</button>
+            <section id="glimmer-guide" class="glimmer-guide" aria-label="孤燈房使用說明" data-i18n-aria-label="guideLabel">
+                <p data-i18n="guideActive"></p>
+                <p data-i18n="guideResidual"></p>
+                <p data-i18n="guideJar"></p>
+                <button id="glimmer-guide-dismiss" class="glimmer-guide-dismiss" type="button" data-i18n="guideDismiss"></button>
             </section>
-            <div class="hint">你進入了孤燈星空。畫面的燈火數量代表目前在線的病友總數。<br>點擊對方的微光，在孤獨中送上一點明亮。</div>
-            <button id="light-jar" class="light-jar" type="button" aria-label="存入一縷微光">
-                <span>✨ 星光儲蓄罐</span>
+            <div class="hint" data-i18n="lonelyHint"></div>
+            <button id="light-jar" class="light-jar" type="button" aria-label="存入一縷微光" data-i18n-aria-label="jarAction">
+                <span data-i18n="jarAction"></span>
                 <span id="light-jar-count" class="light-jar-count" aria-live="polite">0</span>
             </button>
         </div>
         <div id="lonely-lights-container" class="lonely-container"></div>
     </div>
 
-    <!-- 🌌 頁面 3：病友夜燈 -->
+    <!-- 🌌 頁面 3：同行夜燈 -->
     <div id="light-page" class="page">
-        <div class="hint">深夜的星空下，有人正與你默默作伴。<br>點擊微光，為彼此送上一聲無聲的問候。</div>
+        <div class="hint" data-i18n="companionLightsHint"></div>
         <!-- 6 盞固定夜燈容器 -->
         <div id="ward-lights-container" style="position:relative; width:100%; height:100%;"></div>
     </div>
 
     <!-- 🧭 底部導航欄 -->
     <div class="nav-bar">
-        <div class="nav-item active" onclick="switchPage('cave-page')">🪐 釋放樹洞</div>
-        <div class="nav-item" onclick="switchPage('lonely-page')">🕯️ 孤燈房</div>
-        <div class="nav-item" onclick="switchPage('light-page')">🌌 病友夜燈</div>
+        <div class="nav-item active" onclick="switchPage('cave-page')" data-i18n="navHollow"></div>
+        <div class="nav-item" onclick="switchPage('lonely-page')" data-i18n="navLanterns"></div>
+        <div class="nav-item" onclick="switchPage('light-page')" data-i18n="navCompanionLights"></div>
     </div>
     <div id="companion-toast" class="companion-toast" role="status" aria-live="polite"></div>
 
     <!-- 📡 引入 Socket.io 與核心腳本 -->
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        const translations = {
+            'zh-Hant': {
+                documentTitle: '微光｜港灣角落',
+                languageSelector: '選擇語言',
+                traditionalChinese: '繁體中文',
+                simplifiedChinese: '简体中文',
+                english: 'English',
+                caveHint: '你已來到釋放樹洞。寫下心底的感受，按下按鈕，讓一切隨風沙消散。這裡不會儲存你的文字。',
+                cavePlaceholder: '寫下你想說的話⋯⋯',
+                releaseButton: '釋放樹洞',
+                guideLabel: '孤燈房使用說明',
+                guideActive: '<strong>明亮微光：</strong>此刻在線的同行者。點一下，送上一份無聲的鼓勵。',
+                guideResidual: '<strong>暖橘餘溫：</strong>同行者不久前留下的足跡（保留 4 小時）。點一下，為這份微光添暖。',
+                guideJar: '<strong>星光儲蓄罐：</strong>平時存下祝福，深夜有人獨自上線時，微光便會飛向他，陪他一會兒。',
+                guideDismiss: '我已經熟悉了，不用提醒',
+                lonelyHint: '你來到了孤燈星空。畫面的燈火數量代表目前在線的同行者總數。<br>點一下另一位同行者的微光，在寂靜中送上一點暖意。',
+                jarAction: '✨ 存入微光',
+                companionLightsHint: '深夜的星空下，有人正靜靜地陪著你。<br>點一下微光，為彼此送上一聲無聲的問候。',
+                navHollow: '🪐 釋放樹洞',
+                navLanterns: '🕯️ 孤燈房',
+                navCompanionLights: '🌌 同行夜燈',
+                residualTitle: '已收到 {count} 次鼓勵',
+                residualCaption: '有位同行者剛來過 · 鼓勵 {count}',
+                soloToast: '大家白日存下的微光，此刻正陪著你。'
+            },
+            'zh-Hans': {
+                documentTitle: '微光｜港湾角落',
+                languageSelector: '选择语言',
+                traditionalChinese: '繁體中文',
+                simplifiedChinese: '简体中文',
+                english: 'English',
+                caveHint: '你已来到释放心声的树洞。写下心底的感受，按下按钮，让一切随风沙消散。这里不会保存你的文字。',
+                cavePlaceholder: '写下你想说的话……',
+                releaseButton: '释放树洞',
+                guideLabel: '孤灯房使用说明',
+                guideActive: '<strong>明亮微光：</strong>此刻在线的同行者。轻点一下，送上一份无声的鼓励。',
+                guideResidual: '<strong>暖橘余温：</strong>同行者不久前留下的足迹（保留 4 小时）。轻点一下，为这份微光添暖。',
+                guideJar: '<strong>星光储蓄罐：</strong>平时存下祝福，深夜有人独自上线时，微光便会飞向他，陪伴片刻。',
+                guideDismiss: '我已经熟悉了，不用提醒',
+                lonelyHint: '你来到了孤灯星空。画面中的灯火数量代表当前在线的同行者总数。<br>轻点另一位同行者的微光，在寂静中送上一点暖意。',
+                jarAction: '✨ 存入微光',
+                companionLightsHint: '深夜的星空下，有人正静静地陪着你。<br>轻点微光，为彼此送上一声无声的问候。',
+                navHollow: '🪐 释放树洞',
+                navLanterns: '🕯️ 孤灯房',
+                navCompanionLights: '🌌 同行夜灯',
+                residualTitle: '已收到 {count} 次鼓励',
+                residualCaption: '有位同行者刚来过 · 鼓励 {count}',
+                soloToast: '大家白天存下的微光，此刻正陪着你。'
+            },
+            en: {
+                documentTitle: 'Harbour Corner — A little light for the night',
+                languageSelector: 'Choose a language',
+                traditionalChinese: 'Traditional Chinese',
+                simplifiedChinese: 'Simplified Chinese',
+                english: 'English',
+                caveHint: 'Welcome to the Whispering Hollow. Leave what is on your heart, then let it dissolve into the wind. Your words are never saved here.',
+                cavePlaceholder: 'Leave a few words here…',
+                releaseButton: 'Whispering Hollow',
+                guideLabel: 'A guide to Solitary Lanterns',
+                guideActive: '<strong>Steady glimmers:</strong> Companions here with you now. Tap a light to send a little quiet warmth.',
+                guideResidual: '<strong>Lingering Warmth:</strong> A companion was here not long ago (for up to 4 hours). Tap to tend their glow.',
+                guideJar: '<strong>Starlight Jar:</strong> Leave a blessing here, and when someone finds themselves alone late at night, a glimmer will find its way to them.',
+                guideDismiss: 'I know my way around — no more reminders',
+                lonelyHint: 'Welcome beneath the Solitary Lanterns. The lights show how many Companions are here with you now.<br>Tap another companion’s glow to send a little warmth into the quiet.',
+                jarAction: '✨ Add a Glimmer',
+                companionLightsHint: 'Beneath the midnight sky, someone is quietly here with you.<br>Tap a light to send a wordless hello.',
+                navHollow: '🪐 Whispering Hollow',
+                navLanterns: '🕯️ Solitary Lanterns',
+                navCompanionLights: '🌌 Companion Lights',
+                residualTitle: 'Warmth shared: {count}',
+                residualCaption: 'A companion was just here · Warmth {count}',
+                soloToast: 'The glimmers everyone left behind are here to keep you company.'
+            }
+        };
+
+        function detectLanguage() {
+            const savedLanguage = localStorage.getItem('harbourCornerLanguage');
+            if (Object.prototype.hasOwnProperty.call(translations, savedLanguage)) return savedLanguage;
+
+            const browserLanguage = (navigator.language || '').toLowerCase();
+            if (browserLanguage.startsWith('zh-tw') || browserLanguage.startsWith('zh-hk')) return 'zh-Hant';
+            if (browserLanguage.startsWith('zh-cn') || browserLanguage.startsWith('zh-sg')) return 'zh-Hans';
+            return 'en';
+        }
+
+        let currentLanguage = detectLanguage();
+        let lightElements = {};
+        let activeToastKey = null;
+        let toastTimer;
+
+        function translate(key, values = {}) {
+            return translations[currentLanguage][key].replace(/\{(\w+)\}/g, (_, name) => values[name] ?? '');
+        }
+
+        function updateDynamicLightLabels() {
+            Object.values(lightElements).forEach((light) => {
+                if (!light.classList.contains('residual')) return;
+                const count = light.dataset.encouragementCount || '0';
+                light.title = translate('residualTitle', { count });
+                const caption = light.querySelector('.light-caption');
+                if (caption) caption.textContent = translate('residualCaption', { count });
+            });
+        }
+
+        function applyLanguage(language, persist = false) {
+            currentLanguage = language;
+            document.documentElement.lang = language;
+            document.title = translate('documentTitle');
+
+            document.querySelectorAll('[data-i18n]').forEach((element) => {
+                element.innerHTML = translate(element.dataset.i18n);
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach((element) => {
+                element.placeholder = translate(element.dataset.i18nPlaceholder);
+            });
+            document.querySelectorAll('[data-i18n-aria-label]').forEach((element) => {
+                element.setAttribute('aria-label', translate(element.dataset.i18nAriaLabel));
+            });
+            document.querySelectorAll('.language-switcher [data-language]').forEach((button) => {
+                button.setAttribute('aria-pressed', String(button.dataset.language === language));
+            });
+
+            updateDynamicLightLabels();
+            if (activeToastKey) {
+                document.getElementById('companion-toast').textContent = translate(activeToastKey);
+            }
+            if (persist) localStorage.setItem('harbourCornerLanguage', language);
+        }
+
+        document.querySelectorAll('.language-switcher [data-language]').forEach((button) => {
+            button.addEventListener('click', () => applyLanguage(button.dataset.language, true));
+        });
+
+        applyLanguage(currentLanguage);
+
         const glimmerGuide = document.getElementById('glimmer-guide');
         if (localStorage.getItem('hideGlimmerGuide') === 'true') {
             glimmerGuide.classList.add('is-hidden');
@@ -514,9 +696,6 @@
 
         // 自動識別 Render 或本地網址連線
         const socket = io(window.location.origin);
-
-        let lightElements = {}; // 暫存孤燈 DOM 節點
-        let toastTimer;
 
         // 🔄 1. 頁面切換控制
         function switchPage(pageId) {
@@ -636,7 +815,7 @@
         });
 
         // ===================================================
-        // 🌌 功能一：【固定病房夜燈】前端邏輯
+        // 🌌 功能一：【固定夜燈】前端邏輯
         // ===================================================
         const wardContainer = document.getElementById('ward-lights-container');
 
@@ -688,10 +867,9 @@
                 }
 
                 if (light.status === 'residual') {
-                    dot.title = `已收到 ${light.encouragementCount || 0} 次鼓勵`;
+                    dot.dataset.encouragementCount = light.encouragementCount || 0;
                     const caption = document.createElement('span');
                     caption.className = 'light-caption';
-                    caption.textContent = `有位同路人剛來過 · 鼓勵 ${light.encouragementCount || 0}`;
                     dot.appendChild(caption);
                 }
 
@@ -704,6 +882,7 @@
                 lonelyContainer.appendChild(dot);
                 lightElements[light.id] = dot;
             });
+            updateDynamicLightLabels();
         });
 
         document.getElementById('light-jar').addEventListener('click', () => {
@@ -714,12 +893,16 @@
             document.getElementById('light-jar-count').textContent = count;
         });
 
-        function showCompanionToast(message) {
+        function showCompanionToast(messageKey) {
             const toast = document.getElementById('companion-toast');
-            toast.textContent = message;
+            activeToastKey = messageKey;
+            toast.textContent = translate(messageKey);
             toast.classList.add('visible');
             clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => toast.classList.remove('visible'), 5000);
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('visible');
+                activeToastKey = null;
+            }, 5000);
         }
 
         socket.on('solo-light-boost', ({ targetId }) => {
@@ -750,7 +933,7 @@
                 setTimeout(() => target.classList.remove('ignited'), 1500);
             }
 
-            showCompanionToast('大家白天存下的微光，正在替他們陪伴你');
+            showCompanionToast('soloToast');
         });
 
         socket.on('light_triggered', (data) => {
