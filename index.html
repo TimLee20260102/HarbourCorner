@@ -201,7 +201,7 @@
         .lonely-container {
             position: relative;
             width: 100%;
-            flex: 1;
+            flex: 1 1 0;
             min-height: 0;
         }
 
@@ -214,31 +214,34 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 16px;
+            gap: clamp(6px, 1.3vh, 10px);
             width: 100%;
             box-sizing: border-box;
-            padding: clamp(20px, 5vh, 40px) 20px 12px;
+            padding: clamp(10px, 2.4vh, 20px) 16px 8px;
         }
 
         .lonely-header .hint {
             position: static;
             width: 100%;
-            max-width: 600px;
+            max-width: 560px;
             box-sizing: border-box;
             color: var(--hint-color);
+            font-size: 0.88rem;
+            line-height: 1.4;
+            text-wrap: pretty;
         }
 
         .glimmer-guide {
             width: 100%;
             max-width: 600px;
             box-sizing: border-box;
-            padding: 14px 18px;
+            padding: 10px 14px;
             border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 12px;
             background: rgba(255, 255, 255, 0.08);
             color: #d7d0c8;
-            font-size: 0.88rem;
-            line-height: 1.55;
+            font-size: 0.84rem;
+            line-height: 1.4;
             opacity: 1;
             transform: translateY(0);
             transition: opacity 0.35s ease, transform 0.35s ease, max-height 0.35s ease,
@@ -263,7 +266,7 @@
         }
 
         .glimmer-guide p + p {
-            margin-top: 5px;
+            margin-top: 3px;
         }
 
         .glimmer-guide strong {
@@ -273,13 +276,14 @@
 
         .glimmer-guide-dismiss {
             display: block;
-            margin: 10px 0 0 auto;
-            padding: 4px 0 2px 8px;
+            margin: 5px 0 0 auto;
+            padding: 2px 0 0 8px;
             border: 0;
             background: transparent;
             color: #a99f92;
             font: inherit;
             font-size: 0.82rem;
+            line-height: 1.2;
             cursor: pointer;
             transition: color 0.25s ease;
         }
@@ -367,8 +371,8 @@
             z-index: 4;
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 10px 18px;
+            gap: 8px;
+            padding: 8px 14px;
             border: 1px solid rgba(238, 220, 130, 0.28);
             border-radius: 24px;
             background: rgba(25, 30, 25, 0.76);
@@ -377,6 +381,27 @@
             font: inherit;
             cursor: pointer;
             transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        html[lang="en"] .glimmer-guide {
+            padding: 8px 11px;
+            font-size: 0.76rem;
+            line-height: 1.28;
+        }
+
+        html[lang="en"] .glimmer-guide p + p {
+            margin-top: 2px;
+        }
+
+        html[lang="en"] .glimmer-guide-dismiss {
+            margin-top: 3px;
+            font-size: 0.7rem;
+        }
+
+        html[lang="en"] .lonely-header .hint {
+            max-width: 540px;
+            font-size: 0.76rem;
+            line-height: 1.28;
         }
 
         .light-jar:hover {
@@ -608,11 +633,11 @@
                 cavePlaceholder: 'Leave a few words here…',
                 releaseButton: 'Whispering Hollow',
                 guideLabel: 'A guide to Solitary Lanterns',
-                guideActive: '<strong>Steady glimmers:</strong> Companions here with you now. Tap a light to send a little quiet warmth.',
-                guideResidual: '<strong>Lingering Warmth:</strong> A companion was here not long ago (for up to 4 hours). Tap to tend their glow.',
-                guideJar: '<strong>Starlight Jar:</strong> Leave a blessing here, and when someone finds themselves alone late at night, a glimmer will find its way to them.',
+                guideActive: '<strong>Steady glimmers:</strong> Companions here now. Tap one to send quiet warmth.',
+                guideResidual: '<strong>Lingering Warmth:</strong> A companion was here recently. Tap to tend their glow.',
+                guideJar: '<strong>Starlight Jar:</strong> Save a blessing for someone alone beneath the night sky.',
                 guideDismiss: 'I know my way around — no more reminders',
-                lonelyHint: 'Welcome beneath the Solitary Lanterns. The lights show how many Companions are here with you now.<br>Tap another companion’s glow to send a little warmth into the quiet.',
+                lonelyHint: 'Each light is a companion here with you now.<br>Tap one to send a little warmth into the night.',
                 jarAction: '✨ Add a Glimmer',
                 companionLightsHint: 'Beneath the midnight sky, someone is quietly here with you.<br>Tap a light to send a wordless hello.',
                 navHollow: '🪐 Whispering Hollow',
