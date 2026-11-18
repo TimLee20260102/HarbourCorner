@@ -220,6 +220,12 @@
             padding: clamp(10px, 2.4vh, 20px) 16px 8px;
         }
 
+        @media (max-width: 560px) {
+            #lonely-page .lonely-header {
+                padding-top: 62px;
+            }
+        }
+
         .lonely-header .hint {
             position: static;
             width: 100%;
@@ -889,6 +895,14 @@
             }
         }
 
+        function primeHapticsOnFirstTap(event) {
+            if (!event.isTrusted) return;
+            vibrate(1);
+            document.removeEventListener('click', primeHapticsOnFirstTap, true);
+        }
+
+        document.addEventListener('click', primeHapticsOnFirstTap, true);
+
         function releaseAsSand(input) {
             const text = input.value;
             const rect = input.getBoundingClientRect();
@@ -979,7 +993,7 @@
             if (!input.value.trim()) return;
             const cave = document.querySelector('.cave-container').getBoundingClientRect();
             sendRipple(cave.left + cave.width / 2, cave.top + cave.height / 2);
-            vibrate(25);
+            vibrate(80);
             releaseAsSand(input);
             input.value = '';
         });
@@ -1047,7 +1061,7 @@
                 dot.addEventListener('click', (e) => {
                     sendRipple(e.clientX, e.clientY);
                     if (light.id !== visitorId) {
-                        vibrate(25);
+                        vibrate(80);
                         socket.emit('click_light', { targetId: light.id });
                     }
                 });
@@ -1058,7 +1072,7 @@
         });
 
         document.getElementById('light-jar').addEventListener('click', () => {
-            vibrate(25);
+            vibrate(80);
             socket.emit('deposit-light');
         });
 
@@ -1112,7 +1126,7 @@
         socket.on('light_triggered', (data) => {
             const { fromId, targetId } = data;
             if (targetId === visitorId) {
-                vibrate([30, 60, 30]);
+                vibrate([100, 80, 100]);
                 playGentleChime();
             }
             [fromId, targetId].forEach(id => {
