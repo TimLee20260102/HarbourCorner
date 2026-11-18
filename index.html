@@ -482,10 +482,6 @@
         }
 
         .language-switcher {
-            position: fixed;
-            top: 16px;
-            right: 16px;
-            z-index: 30;
             display: flex;
             gap: 2px;
             padding: 3px;
@@ -517,15 +513,58 @@
             outline: 1px solid var(--accent-color);
             outline-offset: 2px;
         }
+
+        .top-controls {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 30;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .sound-toggle {
+            width: 38px;
+            height: 38px;
+            display: grid;
+            place-items: center;
+            padding: 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            background: rgba(15, 20, 17, 0.58);
+            color: var(--text-color);
+            font: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: background 0.25s ease, color 0.25s ease;
+        }
+
+        .sound-toggle[aria-pressed="true"] {
+            border-color: rgba(238, 220, 130, 0.28);
+            color: var(--accent-color);
+            background: rgba(238, 220, 130, 0.12);
+        }
+
+        .sound-toggle:focus-visible {
+            outline: 1px solid var(--accent-color);
+            outline-offset: 2px;
+        }
     </style>
 </head>
 
 <body>
 
-    <div class="language-switcher" role="group" aria-label="選擇語言" data-i18n-aria-label="languageSelector">
-        <button type="button" data-language="zh-Hant" aria-label="繁體中文" data-i18n-aria-label="traditionalChinese" aria-pressed="true">繁</button>
-        <button type="button" data-language="zh-Hans" aria-label="简体中文" data-i18n-aria-label="simplifiedChinese" aria-pressed="false">简</button>
-        <button type="button" data-language="en" aria-label="English" data-i18n-aria-label="english" aria-pressed="false">EN</button>
+    <div class="top-controls">
+        <button id="sound-toggle" class="sound-toggle" type="button" aria-label="開啟微音陪伴" aria-pressed="false">
+            <span id="sound-toggle-icon" aria-hidden="true">🔇</span>
+        </button>
+        <div class="language-switcher" role="group" aria-label="選擇語言" data-i18n-aria-label="languageSelector">
+            <button type="button" data-language="zh-Hant" aria-label="繁體中文" data-i18n-aria-label="traditionalChinese" aria-pressed="true">繁</button>
+            <button type="button" data-language="zh-Hans" aria-label="简体中文" data-i18n-aria-label="simplifiedChinese" aria-pressed="false">简</button>
+            <button type="button" data-language="en" aria-label="English" data-i18n-aria-label="english" aria-pressed="false">EN</button>
+        </div>
     </div>
 
     <!-- 🌌 頁面 1：釋放樹洞 -->
@@ -581,6 +620,8 @@
                 traditionalChinese: '繁體中文',
                 simplifiedChinese: '简体中文',
                 english: 'English',
+                soundMuted: '開啟微音陪伴',
+                soundEnabled: '關閉微音陪伴',
                 caveHint: '你已來到釋放樹洞。寫下心底的感受，按下按鈕，讓一切隨風沙消散。這裡不會儲存你的文字。',
                 cavePlaceholder: '寫下你想說的話⋯⋯',
                 releaseButton: '釋放樹洞',
@@ -605,6 +646,8 @@
                 traditionalChinese: '繁體中文',
                 simplifiedChinese: '简体中文',
                 english: 'English',
+                soundMuted: '开启微音陪伴',
+                soundEnabled: '关闭微音陪伴',
                 caveHint: '你已来到释放心声的树洞。写下心底的感受，按下按钮，让一切随风沙消散。这里不会保存你的文字。',
                 cavePlaceholder: '写下你想说的话……',
                 releaseButton: '释放树洞',
@@ -629,6 +672,8 @@
                 traditionalChinese: 'Traditional Chinese',
                 simplifiedChinese: 'Simplified Chinese',
                 english: 'English',
+                soundMuted: 'Turn on gentle sounds',
+                soundEnabled: 'Turn off gentle sounds',
                 caveHint: 'Welcome to the Whispering Hollow. Leave what is on your heart, then let it dissolve into the wind. Your words are never saved here.',
                 cavePlaceholder: 'Leave a few words here…',
                 releaseButton: 'Whispering Hollow',
@@ -663,6 +708,62 @@
         let lightElements = {};
         let activeToastKey = null;
         let toastTimer;
+        let soundEnabled = localStorage.getItem('hc_sound_enabled') === 'true';
+        let audioContext = null;
+
+        function updateSoundToggle() {
+            const button = document.getElementById('sound-toggle');
+            button.setAttribute('aria-pressed', String(soundEnabled));
+            button.setAttribute('aria-label', translate(soundEnabled ? 'soundEnabled' : 'soundMuted'));
+            document.getElementById('sound-toggle-icon').textContent = soundEnabled ? '🔉' : '🔇';
+        }
+
+        function getAudioContext() {
+            if (audioContext) return audioContext;
+
+            const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextConstructor) return null;
+
+            try {
+                audioContext = new AudioContextConstructor();
+                return audioContext;
+            } catch {
+                return null;
+            }
+        }
+
+        function playGentleChime() {
+            if (!soundEnabled) return;
+
+            const context = getAudioContext();
+            if (!context) return;
+
+            const play = () => {
+                const now = context.currentTime;
+                [
+                    { frequency: 660, volume: 0.035 },
+                    { frequency: 990, volume: 0.012 }
+                ].forEach(({ frequency, volume }) => {
+                    const oscillator = context.createOscillator();
+                    const gain = context.createGain();
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(frequency, now);
+                    gain.gain.setValueAtTime(0.0001, now);
+                    gain.gain.exponentialRampToValueAtTime(volume, now + 0.025);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.9);
+                    oscillator.connect(gain);
+                    gain.connect(context.destination);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.95);
+                });
+            };
+
+            if (context.state === 'running') {
+                play();
+            } else {
+                context.resume().then(play).catch(() => {});
+            }
+        }
 
         function translate(key, values = {}) {
             return translations[currentLanguage][key].replace(/\{(\w+)\}/g, (_, name) => values[name] ?? '');
@@ -695,6 +796,7 @@
             document.querySelectorAll('.language-switcher [data-language]').forEach((button) => {
                 button.setAttribute('aria-pressed', String(button.dataset.language === language));
             });
+            updateSoundToggle();
 
             updateDynamicLightLabels();
             if (activeToastKey) {
@@ -705,6 +807,19 @@
 
         document.querySelectorAll('.language-switcher [data-language]').forEach((button) => {
             button.addEventListener('click', () => applyLanguage(button.dataset.language, true));
+        });
+
+        document.getElementById('sound-toggle').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            localStorage.setItem('hc_sound_enabled', String(soundEnabled));
+            updateSoundToggle();
+
+            if (soundEnabled) {
+                const context = getAudioContext();
+                if (context && context.state !== 'running') {
+                    context.resume().catch(() => {});
+                }
+            }
         });
 
         applyLanguage(currentLanguage);
@@ -762,6 +877,16 @@
             ripple.style.top = `${y}px`;
             document.body.appendChild(ripple);
             ripple.addEventListener('animationend', () => ripple.remove());
+        }
+
+        function vibrate(pattern) {
+            if (!('vibrate' in navigator) || typeof navigator.vibrate !== 'function') return;
+
+            try {
+                navigator.vibrate(pattern);
+            } catch {
+                // Vibration may be unavailable in restricted browser contexts.
+            }
         }
 
         function releaseAsSand(input) {
@@ -854,6 +979,7 @@
             if (!input.value.trim()) return;
             const cave = document.querySelector('.cave-container').getBoundingClientRect();
             sendRipple(cave.left + cave.width / 2, cave.top + cave.height / 2);
+            vibrate(25);
             releaseAsSand(input);
             input.value = '';
         });
@@ -889,6 +1015,7 @@
         socket.on('receive-companion-ripple', (data) => {
             const targetLight = document.getElementById(`light-${data.lightId}`);
             if (targetLight) {
+                playGentleChime();
                 const rect = targetLight.getBoundingClientRect();
                 sendRipple(rect.left + rect.width / 2, rect.top + rect.height / 2);
             }
@@ -920,6 +1047,7 @@
                 dot.addEventListener('click', (e) => {
                     sendRipple(e.clientX, e.clientY);
                     if (light.id !== visitorId) {
+                        vibrate(25);
                         socket.emit('click_light', { targetId: light.id });
                     }
                 });
@@ -930,6 +1058,7 @@
         });
 
         document.getElementById('light-jar').addEventListener('click', () => {
+            vibrate(25);
             socket.emit('deposit-light');
         });
 
@@ -982,6 +1111,10 @@
 
         socket.on('light_triggered', (data) => {
             const { fromId, targetId } = data;
+            if (targetId === visitorId) {
+                vibrate([30, 60, 30]);
+                playGentleChime();
+            }
             [fromId, targetId].forEach(id => {
                 const el = lightElements[id];
                 if (el) {
