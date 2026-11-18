@@ -719,8 +719,27 @@
             glimmerGuide.classList.add('is-hidden');
         });
 
+        function createVisitorId() {
+            if (typeof crypto.randomUUID === 'function') return `hc_${crypto.randomUUID()}`;
+
+            const bytes = new Uint8Array(16);
+            crypto.getRandomValues(bytes);
+            bytes[6] = (bytes[6] & 0x0f) | 0x40;
+            bytes[8] = (bytes[8] & 0x3f) | 0x80;
+            const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+            return `hc_${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+        }
+
+        let visitorId = localStorage.getItem('hc_visitor_id');
+        if (!visitorId) {
+            visitorId = createVisitorId();
+            localStorage.setItem('hc_visitor_id', visitorId);
+        }
+
         // 自動識別 Render 或本地網址連線
-        const socket = io(window.location.origin);
+        const socket = io(window.location.origin, {
+            auth: { visitor_id: visitorId }
+        });
 
         // 🔄 1. 頁面切換控制
         function switchPage(pageId) {
@@ -886,7 +905,7 @@
                 dot.style.top = `${light.y}%`;
                 dot.style.setProperty('--light-brightness', light.brightness || 0.45);
 
-                if (light.status !== 'residual' && light.id === socket.id) {
+                if (light.status !== 'residual' && light.id === visitorId) {
                     dot.style.backgroundColor = '#a8ffb2';
                     dot.style.boxShadow = '0 0 15px #a8ffb2';
                 }
@@ -900,7 +919,7 @@
 
                 dot.addEventListener('click', (e) => {
                     sendRipple(e.clientX, e.clientY);
-                    if (light.id !== socket.id) {
+                    if (light.id !== visitorId) {
                         socket.emit('click_light', { targetId: light.id });
                     }
                 });
@@ -931,7 +950,7 @@
         }
 
         socket.on('solo-light-boost', ({ targetId }) => {
-            if (targetId !== socket.id) return;
+            if (targetId !== visitorId) return;
 
             const jarButton = document.getElementById('light-jar');
             const target = lightElements[targetId];

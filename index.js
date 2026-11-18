@@ -33,6 +33,7 @@ const wardLights = {
 
 const activeLights = {};
 const residualTimers = new Map();
+const visitorSockets = new Map();
 const RESIDUAL_GLOW_MS = 4 * 60 * 60 * 1000;
 const SOLO_WAIT_MS = 10 * 1000;
 const MIN_LIGHT_DISTANCE = 18;
@@ -44,6 +45,12 @@ let soloGiftDelivered = false;
 
 function emitLights() {
     io.emit('update_lights', Object.values(activeLights));
+}
+
+function clearResidualTimer(visitorId) {
+    const timer = residualTimers.get(visitorId);
+    if (timer) clearTimeout(timer);
+    residualTimers.delete(visitorId);
 }
 
 function activeUserIds() {
@@ -87,6 +94,17 @@ function getLightPosition() {
     return bestPosition;
 }
 
+io.use((socket, next) => {
+    const visitorId = socket.handshake.auth && socket.handshake.auth.visitor_id;
+    if (typeof visitorId !== 'string' || !/^hc_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(visitorId)) {
+        next(new Error('A valid visitor ID is required.'));
+        return;
+    }
+
+    socket.data.visitorId = visitorId.toLowerCase();
+    next();
+});
+
 function deliverStoredGlow() {
     if (soloGiftDelivered || !soloUserId || Date.now() - soloSince < SOLO_WAIT_MS) return;
     if (activeUserIds().length !== 1 || activeUserIds()[0] !== soloUserId || lightJarCount < 1) return;
@@ -124,18 +142,30 @@ function refreshSoloPresence() {
 
 io.on('connection', (socket) => {
     console.log('一位新的同行者連線，ID:', socket.id);
+    const visitorId = socket.data.visitorId;
 
-    const oldResidualTimer = residualTimers.get(socket.id);
-    if (oldResidualTimer) clearTimeout(oldResidualTimer);
-    residualTimers.delete(socket.id);
+    clearResidualTimer(visitorId);
+    let sockets = visitorSockets.get(visitorId);
+    if (!sockets) {
+        sockets = new Set();
+        visitorSockets.set(visitorId, sockets);
+    }
+    sockets.add(socket.id);
 
     socket.emit('init-ward-status', wardLights);
-    activeLights[socket.id] = {
-        id: socket.id,
-        ...getLightPosition(),
-        status: 'active',
-        brightness: 1
-    };
+    let visitorLight = activeLights[visitorId];
+    if (visitorLight) {
+        visitorLight.status = 'active';
+        delete visitorLight.expiresAt;
+    } else {
+        visitorLight = {
+            id: visitorId,
+            ...getLightPosition(),
+            status: 'active',
+            brightness: 1
+        };
+        activeLights[visitorId] = visitorLight;
+    }
     emitLights();
     socket.emit('light-jar-state', { count: lightJarCount });
     refreshSoloPresence();
@@ -152,9 +182,9 @@ io.on('connection', (socket) => {
 
         if (!light.isOn) {
             light.isOn = true;
-            light.ownerId = socket.id;
+            light.ownerId = visitorId;
             io.emit('sync-ward-light', light);
-        } else if (light.ownerId === socket.id) {
+        } else if (light.ownerId === visitorId) {
             light.isOn = false;
             light.ownerId = null;
             io.emit('sync-ward-light', light);
@@ -164,7 +194,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('click_light', ({ targetId } = {}) => {
-        if (!targetId || targetId === socket.id) return;
+        if (!targetId || targetId === visitorId) return;
 
         const target = activeLights[targetId];
         if (!target) return;
@@ -176,7 +206,7 @@ io.on('connection', (socket) => {
             return;
         }
 
-        io.emit('light_triggered', { fromId: socket.id, targetId });
+        io.emit('light_triggered', { fromId: visitorId, targetId });
     });
 
     socket.on('deposit-light', () => {
@@ -188,28 +218,35 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('同行者斷開連線:', socket.id);
 
+        const visitorConnections = visitorSockets.get(visitorId);
+        if (visitorConnections) {
+            visitorConnections.delete(socket.id);
+            if (visitorConnections.size > 0) return;
+            visitorSockets.delete(visitorId);
+        }
+
         Object.values(wardLights).forEach((light) => {
-            if (light.ownerId === socket.id) {
+            if (light.ownerId === visitorId) {
                 light.isOn = false;
                 light.ownerId = null;
                 io.emit('sync-ward-light', light);
             }
         });
 
-        const light = activeLights[socket.id];
+        const light = activeLights[visitorId];
         if (light) {
             light.status = 'residual';
             light.brightness = 0.45;
-            light.encouragementCount = 0;
+            light.encouragementCount = light.encouragementCount || 0;
             light.expiresAt = Date.now() + RESIDUAL_GLOW_MS;
             const timer = setTimeout(() => {
-                if (activeLights[socket.id] === light) {
-                    delete activeLights[socket.id];
-                    residualTimers.delete(socket.id);
+                if (activeLights[visitorId] === light && light.status === 'residual' && !visitorSockets.has(visitorId)) {
+                    delete activeLights[visitorId];
+                    residualTimers.delete(visitorId);
                     emitLights();
                 }
             }, RESIDUAL_GLOW_MS);
-            residualTimers.set(socket.id, timer);
+            residualTimers.set(visitorId, timer);
         }
 
         emitLights();
