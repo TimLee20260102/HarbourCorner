@@ -37,7 +37,7 @@ const visitorSockets = new Map();
 const RESIDUAL_GLOW_MS = 4 * 60 * 60 * 1000;
 const SOLO_WAIT_MS = 10 * 1000;
 const MIN_LIGHT_DISTANCE = 18;
-let lightJarCount = 0;
+const lightJar = [];
 let soloTimer = null;
 let soloSince = 0;
 let soloUserId = null;
@@ -57,6 +57,10 @@ function activeUserIds() {
     return Object.values(activeLights)
         .filter((light) => light.status === 'active')
         .map((light) => light.id);
+}
+
+function emitLightJarState() {
+    io.emit('light-jar-state', { count: lightJar.length });
 }
 
 function getLightPosition() {
@@ -107,15 +111,18 @@ io.use((socket, next) => {
 
 function deliverStoredGlow() {
     if (soloGiftDelivered || !soloUserId || Date.now() - soloSince < SOLO_WAIT_MS) return;
-    if (activeUserIds().length !== 1 || activeUserIds()[0] !== soloUserId || lightJarCount < 1) return;
+    if (activeUserIds().length !== 1 || activeUserIds()[0] !== soloUserId) return;
+
+    const glowIndex = lightJar.findIndex((glow) => glow.donorId !== soloUserId);
+    if (glowIndex === -1) return;
 
     const light = activeLights[soloUserId];
     if (!light) return;
 
-    lightJarCount -= 1;
+    lightJar.splice(glowIndex, 1);
     light.brightness = Math.min(2.5, (light.brightness || 1) + 0.8);
     soloGiftDelivered = true;
-    io.emit('light-jar-state', { count: lightJarCount });
+    emitLightJarState();
     emitLights();
     io.emit('solo-light-boost', { targetId: soloUserId });
 }
@@ -167,7 +174,7 @@ io.on('connection', (socket) => {
         activeLights[visitorId] = visitorLight;
     }
     emitLights();
-    socket.emit('light-jar-state', { count: lightJarCount });
+    socket.emit('light-jar-state', { count: lightJar.length });
     refreshSoloPresence();
 
     socket.on('toggle-light', (lightId) => {
@@ -210,8 +217,8 @@ io.on('connection', (socket) => {
     });
 
     socket.on('deposit-light', () => {
-        lightJarCount += 1;
-        io.emit('light-jar-state', { count: lightJarCount });
+        lightJar.push({ donorId: visitorId, createdAt: Date.now() });
+        emitLightJarState();
         deliverStoredGlow();
     });
 
