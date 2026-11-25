@@ -22,15 +22,6 @@ const io = new Server(server, {
     }
 });
 
-const wardLights = {
-    '床位 101': { id: '101', name: '微光 101', x: 25, y: 30, isOn: false },
-    '床位 102': { id: '102', name: '微光 102', x: 50, y: 25, isOn: false },
-    '床位 103': { id: '103', name: '微光 103', x: 75, y: 30, isOn: false },
-    '床位 104': { id: '104', name: '微光 104', x: 25, y: 65, isOn: false },
-    '床位 105': { id: '105', name: '微光 105', x: 50, y: 70, isOn: false },
-    '床位 106': { id: '106', name: '微光 106', x: 75, y: 65, isOn: false }
-};
-
 const activeLights = {};
 const residualTimers = new Map();
 const visitorSockets = new Map();
@@ -159,7 +150,6 @@ io.on('connection', (socket) => {
     }
     sockets.add(socket.id);
 
-    socket.emit('init-ward-status', wardLights);
     let visitorLight = activeLights[visitorId];
     if (visitorLight) {
         visitorLight.status = 'active';
@@ -176,29 +166,6 @@ io.on('connection', (socket) => {
     emitLights();
     socket.emit('light-jar-state', { count: lightJar.length });
     refreshSoloPresence();
-
-    socket.on('toggle-light', (lightId) => {
-        if (lightId === 'REFRESH_MAP') {
-            io.emit('init-ward-status', wardLights);
-            return;
-        }
-
-        const key = `床位 ${lightId}`;
-        const light = wardLights[key];
-        if (!light) return;
-
-        if (!light.isOn) {
-            light.isOn = true;
-            light.ownerId = visitorId;
-            io.emit('sync-ward-light', light);
-        } else if (light.ownerId === visitorId) {
-            light.isOn = false;
-            light.ownerId = null;
-            io.emit('sync-ward-light', light);
-        } else {
-            io.emit('receive-companion-ripple', { lightId });
-        }
-    });
 
     socket.on('click_light', ({ targetId } = {}) => {
         if (!targetId || targetId === visitorId) return;
@@ -231,14 +198,6 @@ io.on('connection', (socket) => {
             if (visitorConnections.size > 0) return;
             visitorSockets.delete(visitorId);
         }
-
-        Object.values(wardLights).forEach((light) => {
-            if (light.ownerId === visitorId) {
-                light.isOn = false;
-                light.ownerId = null;
-                io.emit('sync-ward-light', light);
-            }
-        });
 
         const light = activeLights[visitorId];
         if (light) {
