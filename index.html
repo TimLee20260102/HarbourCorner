@@ -146,7 +146,38 @@
 
         .sand-canvas {
             position: fixed;
+            inset: 0;
             z-index: 3;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+        }
+
+        .release-message {
+            position: fixed;
+            z-index: 6;
+            top: 50%;
+            left: 50%;
+            width: max-content;
+            max-width: calc(100vw - 40px);
+            color: rgba(232, 220, 190, 0.72);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            text-align: center;
+            text-shadow: 0 0 18px rgba(238, 220, 130, 0.24);
+            opacity: 0;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: opacity 0.9s ease;
+        }
+
+        .release-message.visible {
+            opacity: 1;
+        }
+
+        .cave-container.is-releasing #inputArea,
+        .cave-container.is-releasing + #btn {
+            visibility: hidden;
             pointer-events: none;
         }
 
@@ -298,6 +329,31 @@
             animation: residualBreathe 4s infinite ease-in-out;
         }
 
+        .light-dot.blessed::after {
+            content: "";
+            position: absolute;
+            inset: -9px;
+            border: 1px solid rgba(255, 220, 132, 0.72);
+            border-radius: 50%;
+            box-shadow: 0 0 13px rgba(255, 211, 105, 0.52),
+                0 0 24px rgba(255, 211, 105, 0.24);
+            pointer-events: none;
+            animation: blessingGlow 3s infinite ease-in-out;
+        }
+
+        @keyframes blessingGlow {
+            0%,
+            100% {
+                opacity: 0.58;
+                transform: scale(0.96);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.08);
+            }
+        }
+
         @keyframes residualBreathe {
             0%,
             100% {
@@ -412,7 +468,7 @@
             opacity: 0;
             pointer-events: none;
             transform: translate(-50%, -8px);
-            transition: opacity 0.35s ease, transform 0.35s ease;
+            transition: opacity 0.9s ease, transform 0.9s ease;
         }
 
         .companion-toast.visible {
@@ -426,7 +482,50 @@
             color: #ffdf85;
             font-size: 22px;
             pointer-events: none;
-            filter: drop-shadow(0 0 8px #ffdf85);
+            filter: drop-shadow(0 0 8px #ffdf85) drop-shadow(0 0 18px rgba(255, 208, 103, 0.8));
+        }
+
+        .flying-glow::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            right: 50%;
+            width: 58px;
+            height: 3px;
+            border-radius: 50%;
+            background: linear-gradient(90deg, transparent, rgba(255, 213, 122, 0.1), #ffe6a1);
+            filter: blur(1.5px);
+            opacity: 0.8;
+            transform: rotate(var(--trail-angle, 0deg));
+            transform-origin: right center;
+        }
+
+        .gift-ripple {
+            position: fixed;
+            z-index: 18;
+            width: 0;
+            height: 0;
+            border: 1px solid rgba(255, 220, 132, 0.78);
+            border-radius: 50%;
+            pointer-events: none;
+            box-shadow: 0 0 14px rgba(255, 211, 105, 0.42),
+                inset 0 0 12px rgba(255, 211, 105, 0.16);
+            transform: translate(-50%, -50%);
+            animation: giftRippleEffect 1.5s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+        }
+
+        @keyframes giftRippleEffect {
+            from {
+                width: 0;
+                height: 0;
+                opacity: 0.95;
+            }
+
+            to {
+                width: 140px;
+                height: 140px;
+                opacity: 0;
+            }
         }
 
         /* --- 底部導航欄 --- */
@@ -577,9 +676,9 @@
         <div class="hint" data-i18n="caveHint"></div>
         <div class="cave-container">
             <div class="cave-hole"></div>
-            <input type="text" id="inputArea" data-i18n-placeholder="cavePlaceholder" placeholder="輸入你想說的話...">
+            <input type="text" id="inputArea" autocomplete="off" autocorrect="off" spellcheck="false" data-i18n-placeholder="cavePlaceholder" placeholder="輸入你想說的話...">
         </div>
-        <button id="btn" data-i18n="releaseButton"></button>
+        <button id="btn" type="button" data-i18n="releaseButton"></button>
     </div>
 
     <!-- 🧭 底部導航欄 -->
@@ -588,6 +687,7 @@
         <button class="nav-item" type="button" onclick="switchPage('cave-page')" data-i18n="navHollow"></button>
     </div>
     <div id="companion-toast" class="companion-toast" role="status" aria-live="polite"></div>
+    <div id="release-message" class="release-message" role="status" aria-live="polite" aria-hidden="true" data-i18n="releaseMessage"></div>
 
     <!-- 📡 引入 Socket.io 與核心腳本 -->
     <script src="/socket.io/socket.io.js"></script>
@@ -604,6 +704,7 @@
                 caveHint: '你已來到釋放樹洞。寫下心底的感受，按下按鈕，讓一切隨風沙消散。這裡不會儲存你的文字。',
                 cavePlaceholder: '寫下你想說的話⋯⋯',
                 releaseButton: '釋放樹洞',
+                releaseMessage: '心事正隨風化作星塵，願你今晚安好……',
                 guideLabel: '孤燈房使用說明',
                 guideIntro: '這裡是 100% 匿名的《港灣角落》，沒有人知道彼此是誰。當你感到孤單、疲憊或身處病痛時，請知道世上總有人在乎你。',
                 guideSelf: '<strong>綠色呼吸微光：</strong>這就是你。',
@@ -615,7 +716,7 @@
                 navLanterns: '🕯️ 孤燈房',
                 residualTitle: '已收到 {count} 次鼓勵',
                 residualCaption: '有位同行者剛來過 · 鼓勵 {count}',
-                soloToast: '大家白日存下的微光，此刻正陪著你。'
+                soloToast: '✨ 大家白天存下的微光，正化作暖意陪著你'
             },
             'zh-Hans': {
                 documentTitle: '微光｜港湾角落',
@@ -628,6 +729,7 @@
                 caveHint: '你已来到释放心声的树洞。写下心底的感受，按下按钮，让一切随风沙消散。这里不会保存你的文字。',
                 cavePlaceholder: '写下你想说的话……',
                 releaseButton: '释放树洞',
+                releaseMessage: '心事正随风化作星尘，愿你今晚安好……',
                 guideLabel: '孤灯房使用说明',
                 guideIntro: '这里是 100% 匿名的《港湾角落》，没有人知道彼此是谁。当你感到孤单、疲惫或身处病痛时，请知道世上总有人在乎你。',
                 guideSelf: '<strong>绿色呼吸微光：</strong>这就是你。',
@@ -639,7 +741,7 @@
                 navLanterns: '🕯️ 孤灯房',
                 residualTitle: '已收到 {count} 次鼓励',
                 residualCaption: '有位同行者刚来过 · 鼓励 {count}',
-                soloToast: '大家白天存下的微光，此刻正陪着你。'
+                soloToast: '✨ 大家白天存下的微光，正化作暖意陪着你'
             },
             en: {
                 documentTitle: 'Harbour Corner — A little light for the night',
@@ -652,6 +754,7 @@
                 caveHint: 'Welcome to the Whispering Hollow. Leave what is on your heart, then let it dissolve into the wind. Your words are never saved here.',
                 cavePlaceholder: 'Leave a few words here…',
                 releaseButton: 'Whispering Hollow',
+                releaseMessage: 'Your words are dissolving into stardust. May peace find you tonight...',
                 guideLabel: 'A guide to Solitary Lanterns',
                 guideIntro: "Harbour Corner is 100% anonymous—no one knows who's here. If you're lonely, tired or unwell, someone out there cares.",
                 guideSelf: '<strong>Your green, breathing light</strong> is you.',
@@ -663,7 +766,7 @@
                 navLanterns: '🕯️ Solitary Lanterns',
                 residualTitle: 'Warmth shared: {count}',
                 residualCaption: 'A companion was just here · Warmth {count}',
-                soloToast: 'The glimmers everyone left behind are here to keep you company.'
+                soloToast: '✨ A glimmer saved earlier has found you, keeping you company'
             }
         };
 
@@ -679,6 +782,7 @@
 
         let currentLanguage = detectLanguage();
         let lightElements = {};
+        let hasReceivedSoloGift = false;
         let activeToastKey = null;
         let toastTimer;
         let soundEnabled = localStorage.getItem('hc_sound_enabled') === 'true';
@@ -829,6 +933,12 @@
             auth: { visitor_id: visitorId }
         });
 
+        socket.on('disconnect', () => {
+            hasReceivedSoloGift = false;
+            const currentLight = lightElements[visitorId];
+            if (currentLight) currentLight.classList.remove('blessed');
+        });
+
         // 🔄 1. 頁面切換控制
         function switchPage(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -869,75 +979,98 @@
 
         document.addEventListener('click', primeHapticsOnFirstTap, true);
 
-        function releaseAsSand(input) {
-            const text = input.value;
+        function releaseAsSand(input, onComplete) {
             const rect = input.getBoundingClientRect();
             const style = getComputedStyle(input);
             const dpr = window.devicePixelRatio || 1;
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
+            const sourceCanvas = document.createElement('canvas');
+            const sourceContext = sourceCanvas.getContext('2d');
+            if (!context || !sourceContext) return false;
 
-            if (!context) return;
+            let text = input.value;
+            if (!text.trim()) return false;
+            input.value = '';
 
-            canvas.className = 'sand-canvas';
-            canvas.style.left = `${rect.left}px`;
-            canvas.style.top = `${rect.top}px`;
-            canvas.style.width = `${rect.width}px`;
-            canvas.style.height = `${rect.height}px`;
-            canvas.width = Math.ceil(rect.width * dpr);
-            canvas.height = Math.ceil(rect.height * dpr);
-            context.scale(dpr, dpr);
-            context.font = style.font;
-            context.fillStyle = style.color;
-            context.textAlign = 'center';
-            context.textBaseline = 'middle';
-            context.fillText(text, rect.width / 2, rect.height / 2);
+            sourceCanvas.width = Math.ceil(rect.width * dpr);
+            sourceCanvas.height = Math.ceil(rect.height * dpr);
+            sourceContext.scale(dpr, dpr);
+            sourceContext.font = style.font;
+            sourceContext.fillStyle = style.color;
+            sourceContext.textAlign = 'center';
+            sourceContext.textBaseline = 'middle';
+            sourceContext.fillText(text, rect.width / 2, rect.height / 2, rect.width);
+            text = '';
 
-            const image = context.getImageData(0, 0, canvas.width, canvas.height);
-            const stride = 4;
+            const image = sourceContext.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+            const stride = Math.max(3, Math.ceil(Math.sqrt((sourceCanvas.width * sourceCanvas.height) / 40000)));
             const particles = [];
 
-            for (let y = 0; y < canvas.height; y += stride) {
-                for (let x = 0; x < canvas.width; x += stride) {
-                    if (image.data[(y * canvas.width + x) * 4 + 3] > 100) {
-                        particles.push({
-                            x: x / dpr,
-                            y: y / dpr,
-                            vx: (Math.random() - 0.5) * 0.8,
-                            vy: Math.random() * 0.35 + 0.1,
-                            drift: (Math.random() - 0.5) * 0.3,
-                            delay: Math.random() * 350,
-                            size: Math.random() * 1.5 + 0.6
-                        });
+            function createParticle(x, y) {
+                return {
+                    x,
+                    y,
+                    vx: Math.random() * 90 - 40,
+                    vy: Math.random() * 50 - 78,
+                    ax: Math.random() * 2.4 - 0.3,
+                    ay: Math.random() * 0.8 - 0.4,
+                    waveX: Math.random() * 18 + 4,
+                    waveY: Math.random() * 14 + 3,
+                    phase: Math.random() * Math.PI * 2,
+                    color: ['#d8c49a', '#f0d98a', '#fbebbd', '#b8a98d'][Math.floor(Math.random() * 4)],
+                    delay: Math.random() * 450,
+                    size: Math.random() * 1.8 + 0.6
+                };
+            }
+
+            for (let y = 0; y < sourceCanvas.height; y += stride) {
+                for (let x = 0; x < sourceCanvas.width; x += stride) {
+                    if (image.data[(y * sourceCanvas.width + x) * 4 + 3] > 100) {
+                        particles.push(createParticle(rect.left + x / dpr, rect.top + y / dpr));
                     }
                 }
             }
 
-            if (!particles.length) return;
+            if (!particles.length) {
+                for (let index = 0; index < 40; index += 1) {
+                    particles.push(createParticle(rect.left + rect.width / 2, rect.top + rect.height / 2));
+                }
+            }
 
+            canvas.className = 'sand-canvas';
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            canvas.width = Math.ceil(viewportWidth * dpr);
+            canvas.height = Math.ceil(viewportHeight * dpr);
+            canvas.style.width = `${viewportWidth}px`;
+            canvas.style.height = `${viewportHeight}px`;
+            context.scale(dpr, dpr);
             document.body.appendChild(canvas);
             const startedAt = performance.now();
-            const duration = 2200;
+            const duration = 10000;
 
             function animate(now) {
                 const elapsed = now - startedAt;
-                context.clearRect(0, 0, rect.width, rect.height);
+                context.clearRect(0, 0, viewportWidth, viewportHeight);
 
                 particles.forEach(particle => {
                     const age = elapsed - particle.delay;
+                    const seconds = Math.max(age, 0) / 1000;
                     if (age < 0) {
-                        context.globalAlpha = 1;
+                        context.globalAlpha = 0.84 + Math.sin(now * 0.006 + particle.phase) * 0.16;
                         context.fillStyle = style.color;
-                        context.fillRect(particle.x, particle.y, particle.size, particle.size);
-                        return;
+                    } else {
+                        const progress = Math.min(age / (duration - particle.delay), 1);
+                        context.globalAlpha = (1 - progress) * (0.72 + Math.sin(now * 0.008 + particle.phase) * 0.28);
+                        context.fillStyle = particle.color;
                     }
 
-                    const progress = Math.min(age / (duration - particle.delay), 1);
-                    context.globalAlpha = 1 - progress;
-                    context.fillStyle = '#d8c49a';
                     context.fillRect(
-                        particle.x + particle.vx * age / 16.67 + particle.drift * age / 35,
-                        particle.y + particle.vy * age / 16.67 + 0.025 * age / 16.67,
+                        particle.x + particle.vx * seconds + 0.5 * particle.ax * seconds * seconds
+                            + Math.sin(seconds * 2.2 + particle.phase) * particle.waveX,
+                        particle.y + particle.vy * seconds + 0.5 * particle.ay * seconds * seconds
+                            + Math.sin(seconds * 1.7 + particle.phase) * particle.waveY,
                         particle.size,
                         particle.size
                     );
@@ -948,20 +1081,40 @@
                     requestAnimationFrame(animate);
                 } else {
                     canvas.remove();
+                    onComplete();
                 }
             }
 
             requestAnimationFrame(animate);
+            return true;
         }
 
         document.getElementById('btn').addEventListener('click', () => {
             const input = document.getElementById('inputArea');
             if (!input.value.trim()) return;
+            const caveContainer = document.querySelector('.cave-container');
+            const releaseButton = document.getElementById('btn');
+            const releaseMessage = document.getElementById('release-message');
+            const finishRelease = () => {
+                caveContainer.classList.remove('is-releasing');
+                input.disabled = false;
+                releaseButton.disabled = false;
+                releaseMessage.classList.remove('visible');
+                releaseMessage.setAttribute('aria-hidden', 'true');
+            };
+            caveContainer.classList.add('is-releasing');
+            input.disabled = true;
+            releaseButton.disabled = true;
+            releaseMessage.textContent = translate('releaseMessage');
+            releaseMessage.removeAttribute('aria-hidden');
+            releaseMessage.classList.add('visible');
+            if (!releaseAsSand(input, finishRelease)) {
+                finishRelease();
+                return;
+            }
             const cave = document.querySelector('.cave-container').getBoundingClientRect();
             sendRipple(cave.left + cave.width / 2, cave.top + cave.height / 2);
             vibrate(150);
-            releaseAsSand(input);
-            input.value = '';
         });
 
         const lonelyContainer = document.getElementById('lonely-lights-container');
@@ -970,12 +1123,14 @@
             lightElements = {};
             lightsArray.forEach(light => {
                 const dot = document.createElement('div');
-                dot.className = `light-dot${light.status === 'residual' ? ' residual' : ''}`;
+                const isCurrentUser = light.status !== 'residual' && light.id === visitorId;
+                dot.className = `light-dot${light.status === 'residual' ? ' residual' : ''}`
+                    + `${isCurrentUser && hasReceivedSoloGift ? ' blessed' : ''}`;
                 dot.style.left = `${light.x}%`;
                 dot.style.top = `${light.y}%`;
                 dot.style.setProperty('--light-brightness', light.brightness || 0.45);
 
-                if (light.status !== 'residual' && light.id === visitorId) {
+                if (isCurrentUser) {
                     dot.style.backgroundColor = '#a8ffb2';
                     dot.style.boxShadow = '0 0 15px #a8ffb2';
                 }
@@ -1009,7 +1164,7 @@
             document.getElementById('light-jar-count').textContent = count;
         });
 
-        function showCompanionToast(messageKey) {
+        function showCompanionToast(messageKey, duration = 5000) {
             const toast = document.getElementById('companion-toast');
             activeToastKey = messageKey;
             toast.textContent = translate(messageKey);
@@ -1018,7 +1173,7 @@
             toastTimer = setTimeout(() => {
                 toast.classList.remove('visible');
                 activeToastKey = null;
-            }, 5000);
+            }, duration);
         }
 
         socket.on('solo-light-boost', ({ targetId }) => {
@@ -1026,10 +1181,28 @@
 
             const jarButton = document.getElementById('light-jar');
             const target = lightElements[targetId];
-            const jarRect = jarButton.getBoundingClientRect();
-            const targetRect = target && target.getBoundingClientRect();
+            hasReceivedSoloGift = true;
+            if (target) target.classList.add('blessed');
+
+            const finishGiftArrival = () => {
+                if (target && target.isConnected && document.getElementById('lonely-page').classList.contains('active')) {
+                    const targetRect = target.getBoundingClientRect();
+                    const ripple = document.createElement('span');
+                    ripple.className = 'gift-ripple';
+                    ripple.style.left = `${targetRect.left + targetRect.width / 2}px`;
+                    ripple.style.top = `${targetRect.top + targetRect.height / 2}px`;
+                    document.body.appendChild(ripple);
+                    ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
+                }
+
+                vibrate([80, 45, 80]);
+                playGentleChime();
+                showCompanionToast('soloToast', 20000);
+            };
 
             if (target && document.getElementById('lonely-page').classList.contains('active')) {
+                const jarRect = jarButton.getBoundingClientRect();
+                const targetRect = target.getBoundingClientRect();
                 const glow = document.createElement('span');
                 glow.className = 'flying-glow';
                 glow.textContent = '✦';
@@ -1039,17 +1212,19 @@
 
                 const deltaX = targetRect.left + targetRect.width / 2 - jarRect.left - jarRect.width / 2;
                 const deltaY = targetRect.top + targetRect.height / 2 - jarRect.top - jarRect.height / 2;
+                glow.style.setProperty('--trail-angle', `${Math.atan2(deltaY, deltaX) * 180 / Math.PI + 180}deg`);
                 const animation = glow.animate([
                     { transform: 'translate(-50%, -50%) scale(0.7)', opacity: 0.2 },
                     { transform: 'translate(-50%, -50%) scale(1.3)', opacity: 1, offset: 0.35 },
                     { transform: `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px)) scale(0.6)`, opacity: 0.2 }
-                ], { duration: 1300, easing: 'ease-in-out' });
-                animation.addEventListener('finish', () => glow.remove(), { once: true });
-                target.classList.add('ignited');
-                setTimeout(() => target.classList.remove('ignited'), 1500);
+                ], { duration: 2500, easing: 'ease-in-out' });
+                animation.addEventListener('finish', () => {
+                    glow.remove();
+                    finishGiftArrival();
+                }, { once: true });
+            } else {
+                setTimeout(finishGiftArrival, 2500);
             }
-
-            showCompanionToast('soloToast');
         });
 
         socket.on('light_triggered', (data) => {
